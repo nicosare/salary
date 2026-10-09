@@ -9,6 +9,9 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Зарплата">
+    <link rel="manifest" href="./manifest.webmanifest">
+    <link rel="icon" href="./icons/icon-192.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="./icons/icon-192.svg">
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -1212,19 +1215,20 @@
         }
 
         function initPWA() {
-            if ('serviceWorker' in navigator) {
-                const swCode = `
-                    const CACHE = 'salary-v1';
-                    self.addEventListener('install', e => self.skipWaiting());
-                    self.addEventListener('activate', e => self.clients.claim());
-                    self.addEventListener('fetch', e => {
-                        e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
-                    });
-                `;
-                const blob = new Blob([swCode], { type: 'application/javascript' });
-                const blobUrl = URL.createObjectURL(blob);
-                navigator.serviceWorker.register(blobUrl).catch(() => {});
+            if (!('serviceWorker' in navigator)) return;
+            if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+                console.warn('[PWA] Service Worker requires HTTPS or localhost.');
+                return;
             }
+
+            // Use a real same-origin file; Blob URLs cannot be registered as Service Workers.
+            navigator.serviceWorker.register('./sw.js', { scope: './' })
+                .then(registration => {
+                    console.info('[PWA] Service Worker registered:', registration.scope);
+                })
+                .catch(error => {
+                    console.error('[PWA] Service Worker registration failed:', error);
+                });
         }
     </script>
 </body>
