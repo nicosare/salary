@@ -1,0 +1,1231 @@
+<!DOCTYPE html>
+<html lang="ru" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Учёт Зарплаты и Смен</title>
+    <!-- PWA Settings -->
+    <meta name="theme-color" content="#0f172a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Зарплата">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- FontAwesome 6.5.1 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        /* Custom scrollbar and touch styling */
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        body {
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+        .glass-card {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .active-tab {
+            color: #38bdf8 !important;
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen pb-28">
+
+    <!-- Top Header Bar -->
+    <header class="sticky top-0 z-40 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 px-4 py-3 flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center text-slate-900 shadow-lg shadow-emerald-500/20 font-black text-xl">
+                ₽
+            </div>
+            <div>
+                <h1 class="text-base font-bold leading-tight">Учёт Зарплаты</h1>
+                <p id="headerRateBadge" class="text-xs text-emerald-400 font-medium">Ставка: 350 ₽/ч</p>
+            </div>
+        </div>
+        <button onclick="switchTab('settings')" class="w-9 h-9 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 hover:text-slate-200 active:scale-95 transition">
+            <i class="fa-solid fa-gear text-sm"></i>
+        </button>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-lg mx-auto px-4 pt-4 space-y-5">
+
+        <!-- TAB 1: Main Dashboard -->
+        <section id="tab-dashboard" class="tab-content space-y-5">
+            
+            <!-- Nearest Payout Forecast Card -->
+            <div class="glass-card rounded-2xl p-5 relative overflow-hidden bg-gradient-to-br from-slate-800/90 via-slate-800/50 to-indigo-950/40 border border-indigo-500/20 shadow-xl">
+                <div class="absolute -right-6 -bottom-6 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none"></div>
+                
+                <div class="flex items-center justify-between mb-2">
+                    <div class="flex items-center space-x-2">
+                        <span class="inline-flex items-center justify-center w-6 h-6 rounded-md bg-indigo-500/20 text-indigo-400 text-xs">
+                            <i class="fa-solid fa-calculator"></i>
+                        </span>
+                        <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Ближайшая выплата</span>
+                    </div>
+                    <span id="periodBadge" class="text-[11px] font-medium bg-slate-700/60 text-slate-300 px-2.5 py-0.5 rounded-full border border-slate-600/40">
+                        1–15 число
+                    </span>
+                </div>
+
+                <div class="mt-1 flex items-baseline justify-between">
+                    <div>
+                        <div id="forecastAmount" class="text-3xl font-black tracking-tight text-white">0 ₽</div>
+                        <div class="text-xs text-slate-400 mt-1 flex items-center space-x-1">
+                            <span>Отработано:</span>
+                            <span id="forecastHours" class="font-bold text-emerald-400">0 ч</span>
+                            <span class="text-slate-500">(по сменам)</span>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-[10px] text-slate-400 uppercase font-medium">Дата выплаты</div>
+                        <div id="payoutDateText" class="text-sm font-bold text-indigo-300">25 числа</div>
+                    </div>
+                </div>
+
+                <div class="mt-4 pt-3 border-t border-slate-700/50 flex items-center text-[11px] text-slate-400">
+                    <i class="fa-solid fa-circle-info text-indigo-400 mr-2 text-xs"></i>
+                    <span>Расчёт строго по сменам. Авансы и выплаты не уменьшают прогноз.</span>
+                </div>
+            </div>
+
+            <!-- Today's Shift Quick Input -->
+            <div class="glass-card rounded-2xl p-4 space-y-3">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-2">
+                        <i class="fa-regular fa-clock text-emerald-400"></i>
+                        <h2 class="text-sm font-bold text-slate-200">Смена за сегодня (<span id="todayDateLabel">--.--</span>)</h2>
+                    </div>
+                    <!-- Double Rate Toggle -->
+                    <label class="inline-flex items-center cursor-pointer select-none">
+                        <input type="checkbox" id="todayX2Toggle" onchange="toggleTodayX2()" class="sr-only peer">
+                        <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500 relative"></div>
+                        <span class="ml-2 text-xs font-semibold text-amber-400">x2 🎉</span>
+                    </label>
+                </div>
+
+                <!-- Hour Preset Buttons -->
+                <div class="grid grid-cols-4 gap-2">
+                    <button onclick="setTodayHours(0)" class="quick-hour-btn py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold border border-slate-700 transition active:scale-95">0ч</button>
+                    <button onclick="setTodayHours(8)" class="quick-hour-btn py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold border border-slate-700 transition active:scale-95">8ч</button>
+                    <button onclick="setTodayHours(8.5)" class="quick-hour-btn py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold border border-slate-700 transition active:scale-95">8.5ч</button>
+                    <button onclick="setTodayHours(9)" class="quick-hour-btn py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold border border-slate-700 transition active:scale-95">9ч</button>
+                </div>
+
+                <!-- Custom Input Field -->
+                <div class="flex items-center space-x-2 pt-1">
+                    <div class="relative flex-1">
+                        <input type="number" step="0.5" min="0" max="24" id="customHoursInput" placeholder="Своё кол-во часов" class="w-full bg-slate-800/80 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500">
+                    </div>
+                    <button onclick="saveCustomHours()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-2 rounded-xl text-sm transition active:scale-95">
+                        Сохранить
+                    </button>
+                </div>
+            </div>
+
+            <!-- Quick Tips Input -->
+            <div class="glass-card rounded-2xl p-4 space-y-3">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-2">
+                        <i class="fa-solid fa-coins text-amber-400"></i>
+                        <h2 class="text-sm font-bold text-slate-200">Быстрые чаевые</h2>
+                    </div>
+                    <span id="todayTipsBadge" class="text-xs bg-amber-500/10 text-amber-400 px-2 py-0.5 rounded-md font-semibold">Сегодня: 0 ₽</span>
+                </div>
+
+                <div class="grid grid-cols-5 gap-1.5">
+                    <button onclick="addTip(50)" class="py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 text-xs font-bold border border-slate-700/80 transition active:scale-95">+50</button>
+                    <button onclick="addTip(100)" class="py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 text-xs font-bold border border-slate-700/80 transition active:scale-95">+100</button>
+                    <button onclick="addTip(500)" class="py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 text-xs font-bold border border-slate-700/80 transition active:scale-95">+500</button>
+                    <button onclick="addTip(1000)" class="py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 text-xs font-bold border border-slate-700/80 transition active:scale-95">+1k</button>
+                    <button onclick="addTip(5000)" class="py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 text-xs font-bold border border-slate-700/80 transition active:scale-95">+5k</button>
+                </div>
+
+                <button onclick="openCustomTipModal()" class="w-full py-2 bg-slate-800/60 hover:bg-slate-800 border border-slate-700/60 rounded-xl text-xs text-slate-300 font-medium flex items-center justify-center space-x-1.5 transition">
+                    <i class="fa-solid fa-plus text-[10px]"></i>
+                    <span>Ввести чаевые с комментарием</span>
+                </button>
+            </div>
+
+            <!-- Record Payouts (Аванс, Зарплата, Премия, Отпускные) -->
+            <div class="glass-card rounded-2xl p-4 space-y-3">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-wallet text-indigo-400"></i>
+                    <h2 class="text-sm font-bold text-slate-200">Фиксация получений</h2>
+                </div>
+
+                <form id="payoutForm" onsubmit="handlePayoutSubmit(event)" class="space-y-3">
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-[11px] text-slate-400 mb-1">Тип выплаты</label>
+                            <select id="payoutType" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500">
+                                <option value="advance">Аванс</option>
+                                <option value="salary">Зарплата</option>
+                                <option value="bonus">Премия</option>
+                                <option value="vacation">Отпускные</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] text-slate-400 mb-1">Сумма (₽)</label>
+                            <input type="number" id="payoutAmount" required min="1" step="1" oninput="updateHourEquivalent()" placeholder="0" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500">
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between text-xs bg-slate-800/40 p-2.5 rounded-xl border border-slate-700/40">
+                        <span class="text-slate-400">Эквивалент в часах:</span>
+                        <span id="payoutHourEquiv" class="font-bold text-indigo-300">0.0 ч</span>
+                    </div>
+
+                    <div class="flex items-center space-x-2">
+                        <input type="text" id="payoutComment" placeholder="Комментарий (необязательно)" class="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500">
+                        <button type="submit" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-4 py-2 rounded-xl text-xs transition active:scale-95 flex items-center space-x-1">
+                            <i class="fa-solid fa-check"></i>
+                            <span>Записать</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Recent Operations Feed -->
+            <div class="glass-card rounded-2xl p-4 space-y-3">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-sm font-bold text-slate-200">Последние операции</h2>
+                    <span class="text-[11px] text-slate-400">За 30 дней</span>
+                </div>
+                <div id="recentOperationsList" class="space-y-2 max-h-48 overflow-y-auto pr-1">
+                    <!-- Dynamic Items -->
+                </div>
+            </div>
+
+        </section>
+
+        <!-- TAB 2: Shifts & Calendar -->
+        <section id="tab-shifts" class="tab-content hidden space-y-4">
+            
+            <!-- Calendar Navigation -->
+            <div class="glass-card rounded-2xl p-4 space-y-4">
+                <div class="flex items-center justify-between">
+                    <button onclick="changeCalendarMonth(-1)" class="w-8 h-8 rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 flex items-center justify-center transition">
+                        <i class="fa-solid fa-chevron-left text-xs"></i>
+                    </button>
+                    <h2 id="calendarMonthTitle" class="text-base font-bold text-white">Октябрь 2026</h2>
+                    <button id="nextMonthBtn" onclick="changeCalendarMonth(1)" class="w-8 h-8 rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 flex items-center justify-center transition disabled:opacity-30 disabled:pointer-events-none">
+                        <i class="fa-solid fa-chevron-right text-xs"></i>
+                    </button>
+                </div>
+
+                <!-- Calendar Week Header -->
+                <div class="grid grid-cols-7 gap-1 text-center text-[11px] font-bold text-slate-500 uppercase">
+                    <div>Пн</div><div>Вт</div><div>Ср</div><div>Чт</div><div>Пт</div><div class="text-rose-400">Сб</div><div class="text-rose-400">Вс</div>
+                </div>
+
+                <!-- Days Grid -->
+                <div id="calendarGrid" class="grid grid-cols-7 gap-1.5">
+                    <!-- Dynamic Days -->
+                </div>
+            </div>
+
+            <!-- Month Summary Card -->
+            <div class="glass-card rounded-2xl p-4 grid grid-cols-3 gap-2 text-center">
+                <div>
+                    <div class="text-[10px] text-slate-400 uppercase">Всего часов</div>
+                    <div id="monthTotalHours" class="text-base font-black text-emerald-400 mt-0.5">0 ч</div>
+                </div>
+                <div>
+                    <div class="text-[10px] text-slate-400 uppercase">Заработок</div>
+                    <div id="monthTotalShiftEarnings" class="text-base font-black text-white mt-0.5">0 ₽</div>
+                </div>
+                <div>
+                    <div class="text-[10px] text-slate-400 uppercase">Чаевые</div>
+                    <div id="monthTotalTips" class="text-base font-black text-amber-400 mt-0.5">0 ₽</div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- TAB 3: Analytics -->
+        <section id="tab-analytics" class="tab-content hidden space-y-4">
+            
+            <!-- Summary Stats Cards Grid -->
+            <div class="grid grid-cols-2 gap-3">
+                <div class="glass-card rounded-2xl p-3.5 space-y-1">
+                    <div class="text-[11px] text-slate-400 font-medium">Доход за 12 мес.</div>
+                    <div id="statsAnnualTotal" class="text-lg font-black text-white">0 ₽</div>
+                    <div class="text-[10px] text-slate-500">Выплаты + Чаевые</div>
+                </div>
+                <div class="glass-card rounded-2xl p-3.5 space-y-1">
+                    <div class="text-[11px] text-slate-400 font-medium">Средний доход/мес</div>
+                    <div id="statsMonthlyAvg" class="text-lg font-black text-emerald-400">0 ₽</div>
+                    <div class="text-[10px] text-slate-500">За активные месяцы</div>
+                </div>
+                <div class="glass-card rounded-2xl p-3.5 space-y-1">
+                    <div class="text-[11px] text-slate-400 font-medium">Средние чаевые/мес</div>
+                    <div id="statsTipsAvg" class="text-lg font-black text-amber-400">0 ₽</div>
+                    <div class="text-[10px] text-slate-500">Среднее значение</div>
+                </div>
+                <div class="glass-card rounded-2xl p-3.5 space-y-1">
+                    <div class="text-[11px] text-slate-400 font-medium">Лучший месяц</div>
+                    <div id="statsBestMonth" class="text-sm font-bold text-indigo-300 truncate">--</div>
+                    <div id="statsBestMonthAmount" class="text-[11px] text-slate-400">0 ₽</div>
+                </div>
+            </div>
+
+            <!-- Line Chart: Monthly Income Dynamics -->
+            <div class="glass-card rounded-2xl p-4 space-y-2">
+                <h3 class="text-xs font-bold text-slate-300 uppercase tracking-wider">Динамика доходов</h3>
+                <div class="h-52 w-full relative">
+                    <canvas id="incomeLineChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Doughnut Chart: Payment Types Breakdown -->
+            <div class="glass-card rounded-2xl p-4 space-y-2">
+                <h3 class="text-xs font-bold text-slate-300 uppercase tracking-wider">Структура доходов</h3>
+                <div class="h-48 w-full relative flex items-center justify-center">
+                    <canvas id="payoutDoughnutChart"></canvas>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- TAB 4: Settings -->
+        <section id="tab-settings" class="tab-content hidden space-y-4">
+            
+            <div class="glass-card rounded-2xl p-4 space-y-4">
+                <h2 class="text-sm font-bold text-slate-200 border-b border-slate-700/60 pb-2">Основные настройки</h2>
+                
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Почасовая ставка (₽/час)</label>
+                    <div class="flex space-x-2">
+                        <input type="number" id="settingRateInput" min="1" step="10" class="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500">
+                        <button onclick="saveHourlyRateSetting()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-2 rounded-xl text-xs transition active:scale-95">
+                            Сохранить
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Backup and Restore -->
+            <div class="glass-card rounded-2xl p-4 space-y-3">
+                <h2 class="text-sm font-bold text-slate-200 border-b border-slate-700/60 pb-2">Резервное копирование (JSON)</h2>
+                <p class="text-xs text-slate-400">Экспортируйте ваши данные в файл или восстановите их на новом устройстве.</p>
+                
+                <div class="grid grid-cols-2 gap-2 pt-1">
+                    <button onclick="exportDataJSON()" class="py-2.5 px-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl text-xs font-bold text-slate-200 flex items-center justify-center space-x-2 transition active:scale-95">
+                        <i class="fa-solid fa-download text-indigo-400"></i>
+                        <span>Экспорт JSON</span>
+                    </button>
+                    <button onclick="document.getElementById('importFileInput').click()" class="py-2.5 px-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl text-xs font-bold text-slate-200 flex items-center justify-center space-x-2 transition active:scale-95">
+                        <i class="fa-solid fa-upload text-emerald-400"></i>
+                        <span>Импорт JSON</span>
+                    </button>
+                    <input type="file" id="importFileInput" accept=".json" class="hidden" onchange="importDataJSON(event)">
+                </div>
+            </div>
+
+            <!-- App Reset -->
+            <div class="glass-card rounded-2xl p-4 space-y-3 border-rose-500/20">
+                <h2 class="text-sm font-bold text-rose-400 border-b border-slate-700/60 pb-2">Опасная зона</h2>
+                <button onclick="confirmResetData()" class="w-full py-2.5 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 rounded-xl text-xs font-bold text-rose-400 transition active:scale-95">
+                    Сбросить и очистить все данные
+                </button>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- Fixed Bottom Navigation Bar (Height h-20) -->
+    <nav class="fixed bottom-0 left-0 right-0 h-20 bg-slate-900/95 backdrop-blur-lg border-t border-slate-800 flex items-center justify-around z-50 px-2 max-w-lg mx-auto">
+        <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-btn active-tab flex flex-col items-center justify-center w-16 h-full text-slate-400 transition">
+            <i class="fa-solid fa-house text-xl mb-1"></i>
+            <span class="text-[10px] font-semibold">Главная</span>
+        </button>
+        <button onclick="switchTab('shifts')" id="nav-shifts" class="nav-btn flex flex-col items-center justify-center w-16 h-full text-slate-400 transition">
+            <i class="fa-solid fa-calendar-days text-xl mb-1"></i>
+            <span class="text-[10px] font-semibold">Смены</span>
+        </button>
+        <button onclick="switchTab('analytics')" id="nav-analytics" class="nav-btn flex flex-col items-center justify-center w-16 h-full text-slate-400 transition">
+            <i class="fa-solid fa-chart-pie text-xl mb-1"></i>
+            <span class="text-[10px] font-semibold">Статистика</span>
+        </button>
+        <button onclick="switchTab('settings')" id="nav-settings" class="nav-btn flex flex-col items-center justify-center w-16 h-full text-slate-400 transition">
+            <i class="fa-solid fa-sliders text-xl mb-1"></i>
+            <span class="text-[10px] font-semibold">Настройки</span>
+        </button>
+    </nav>
+
+    <!-- Custom Modals Container -->
+
+    <!-- Edit Shift Modal -->
+    <div id="editShiftModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="glass-card bg-slate-900 rounded-2xl max-w-xs w-full p-5 space-y-4 border border-slate-700 shadow-2xl">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                <h3 id="modalShiftDate" class="text-sm font-bold text-white">Редактирование смены</h3>
+                <button onclick="closeModal('editShiftModal')" class="text-slate-400 hover:text-white text-lg">&times;</button>
+            </div>
+            
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Часы смены</label>
+                    <input type="number" step="0.5" min="0" max="24" id="modalShiftHours" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500">
+                </div>
+                <div class="flex items-center justify-between py-1">
+                    <span class="text-xs text-slate-300 font-medium">Двойная ставка (x2)</span>
+                    <label class="inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="modalShiftX2" class="sr-only peer">
+                        <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500 relative"></div>
+                    </label>
+                </div>
+            </div>
+
+            <div class="flex space-x-2 pt-2">
+                <button onclick="saveModalShift()" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 rounded-xl text-xs transition">
+                    Сохранить
+                </button>
+                <button onclick="clearModalShift()" class="bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 font-bold px-3 py-2 rounded-xl text-xs transition">
+                    Удалить
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Tip Modal -->
+    <div id="customTipModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="glass-card bg-slate-900 rounded-2xl max-w-xs w-full p-5 space-y-4 border border-slate-700 shadow-2xl">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                <h3 class="text-sm font-bold text-white">Внести чаевые</h3>
+                <button onclick="closeModal('customTipModal')" class="text-slate-400 hover:text-white text-lg">&times;</button>
+            </div>
+            
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Сумма (₽)</label>
+                    <input type="number" min="1" step="10" id="customTipAmount" placeholder="0" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500">
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Комментарий</label>
+                    <input type="text" id="customTipComment" placeholder="За отличный сервис..." class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500">
+                </div>
+            </div>
+
+            <button onclick="saveCustomTip()" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-900 font-bold py-2 rounded-xl text-xs transition">
+                Добавить чаевые
+            </button>
+        </div>
+    </div>
+
+    <!-- Custom Alert/Confirm Modal -->
+    <div id="confirmModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="glass-card bg-slate-900 rounded-2xl max-w-xs w-full p-5 space-y-4 border border-slate-700 shadow-2xl text-center">
+            <i class="fa-solid fa-triangle-exclamation text-amber-400 text-3xl"></i>
+            <h3 id="confirmModalTitle" class="text-sm font-bold text-white">Подтверждение</h3>
+            <p id="confirmModalMessage" class="text-xs text-slate-400">Вы уверены?</p>
+            
+            <div class="flex space-x-2 pt-2">
+                <button id="confirmModalBtn" class="flex-1 bg-rose-600 hover:bg-rose-500 text-white font-bold py-2 rounded-xl text-xs transition">
+                    Да, сбросить
+                </button>
+                <button onclick="closeModal('confirmModal')" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-2 rounded-xl text-xs transition">
+                    Отмена
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toastContainer" class="fixed top-4 right-4 left-4 z-50 pointer-events-none space-y-2 flex flex-col items-center max-w-sm mx-auto"></div>
+
+    <script>
+        // Default application state
+        const STORAGE_KEY = 'nicosare_salary_data_v2';
+        
+        let state = {
+            settings: {
+                hourlyRate: 350
+            },
+            shifts: {}, // Format: "YYYY-MM-DD": { hours: 8, x2: false }
+            tips: [],   // Format: [ { id, date: "YYYY-MM-DD", amount: 500, comment: "" } ]
+            payouts: [] // Format: [ { id, date: "YYYY-MM-DD", type: "advance"|"salary"|"bonus"|"vacation", amount: 5000, comment: "" } ]
+        };
+
+        let currentCalendarDate = new Date();
+        let selectedShiftDateStr = null;
+        let lineChartInstance = null;
+        let doughnutChartInstance = null;
+
+        // Initialize App
+        window.addEventListener('DOMContentLoaded', () => {
+            loadState();
+            initPWA();
+            renderAll();
+        });
+
+        // Load State from LocalStorage
+        function loadState() {
+            try {
+                const saved = localStorage.getItem(STORAGE_KEY);
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    state = { ...state, ...parsed };
+                }
+            } catch (e) {
+                console.error("Failed to load local state", e);
+            }
+        }
+
+        // Save State to LocalStorage
+        function saveState() {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+            } catch (e) {
+                console.error("Failed to save state", e);
+            }
+        }
+
+        // Date Format Helpers (ISO YYYY-MM-DD)
+        function getISODateStr(d = new Date()) {
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        function formatRuDate(dateStr) {
+            const parts = dateStr.split('-');
+            if (parts.length !== 3) return dateStr;
+            return `${parts[2]}.${parts[1]}.${parts[0]}`;
+        }
+
+        /**
+         * CORE LOGIC BUGFIX:
+         * Calculates forecast strictly based on shifts worked in current half-month calculation period:
+         * - Days 1–15 of month -> Period: 1st..15th -> Payout Target: 25th
+         * - Days 16–end of month -> Period: 16th..end -> Payout Target: 10th of next month
+         * Weekend Adjustment: If target payout date falls on Saturday (6) or Sunday (0), move to Friday!
+         * Advances/Payouts ARE NOT SUBTRACTED.
+         */
+        function getCalculationPeriodAndPayoutDate(refDate = new Date()) {
+            const year = refDate.getFullYear();
+            const month = refDate.getMonth();
+            const day = refDate.getDate();
+
+            let periodStart, periodEnd, rawPayoutDate, periodLabel;
+
+            if (day <= 15) {
+                // First half of month
+                periodStart = new Date(year, month, 1);
+                periodEnd = new Date(year, month, 15, 23, 59, 59);
+                rawPayoutDate = new Date(year, month, 25);
+                periodLabel = "1–15 число";
+            } else {
+                // Second half of month
+                periodStart = new Date(year, month, 16);
+                const lastDay = new Date(year, month + 1, 0).getDate();
+                periodEnd = new Date(year, month, lastDay, 23, 59, 59);
+                rawPayoutDate = new Date(year, month + 1, 10);
+                
+                const nextMonthRu = rawPayoutDate.toLocaleString('ru', { month: 'short' });
+                periodLabel = `16–${lastDay} число`;
+            }
+
+            // Weekend shift rule for payout date (Sat -> Fri -1, Sun -> Fri -2)
+            let adjustedPayoutDate = new Date(rawPayoutDate);
+            const dayOfWeek = adjustedPayoutDate.getDay();
+            if (dayOfWeek === 6) { // Saturday
+                adjustedPayoutDate.setDate(adjustedPayoutDate.getDate() - 1);
+            } else if (dayOfWeek === 0) { // Sunday
+                adjustedPayoutDate.setDate(adjustedPayoutDate.getDate() - 2);
+            }
+
+            return {
+                periodStart,
+                periodEnd,
+                payoutDate: adjustedPayoutDate,
+                rawPayoutDate,
+                periodLabel
+            };
+        }
+
+        function calculateNearestPayoutForecast() {
+            const { periodStart, periodEnd, payoutDate, periodLabel } = getCalculationPeriodAndPayoutDate(new Date());
+            
+            let totalHours = 0;
+            let totalEarnings = 0;
+            const rate = state.settings.hourlyRate || 350;
+
+            // Iterate over shifts
+            Object.keys(state.shifts).forEach(dateStr => {
+                const shiftDate = new Date(dateStr + 'T00:00:00');
+                if (shiftDate >= periodStart && shiftDate <= periodEnd) {
+                    const shift = state.shifts[dateStr];
+                    const hours = parseFloat(shift.hours) || 0;
+                    const mult = shift.x2 ? 2 : 1;
+                    totalHours += hours;
+                    totalEarnings += hours * rate * mult;
+                }
+            });
+
+            // Format Payout Date display
+            const dayNum = payoutDate.getDate();
+            const monthRu = payoutDate.toLocaleString('ru', { month: 'long' });
+            const dayOfWeekRu = payoutDate.toLocaleString('ru', { weekday: 'short' });
+
+            return {
+                amount: totalEarnings,
+                hours: totalHours,
+                payoutDateStr: `${dayNum} ${monthRu} (${dayOfWeekRu})`,
+                periodLabel
+            };
+        }
+
+        function renderAll() {
+            renderHeaderAndDashboard();
+            renderRecentOperations();
+            renderCalendar();
+            renderAnalytics();
+            renderSettings();
+        }
+
+        function renderHeaderAndDashboard() {
+            // Header Rate Badge
+            document.getElementById('headerRateBadge').textContent = `Ставка: ${state.settings.hourlyRate} ₽/ч`;
+
+            // Today's Date Label
+            const todayStr = getISODateStr();
+            document.getElementById('todayDateLabel').textContent = formatRuDate(todayStr);
+
+            // Today's shift state
+            const todayShift = state.shifts[todayStr] || { hours: 0, x2: false };
+            document.getElementById('todayX2Toggle').checked = !!todayShift.x2;
+
+            // Update Quick Buttons Active Styling
+            document.querySelectorAll('.quick-hour-btn').forEach(btn => {
+                const hVal = parseFloat(btn.textContent);
+                if (todayShift.hours === hVal) {
+                    btn.classList.add('bg-emerald-600', 'text-white', 'border-emerald-500');
+                    btn.classList.remove('bg-slate-800', 'text-slate-300');
+                } else {
+                    btn.classList.remove('bg-emerald-600', 'text-white', 'border-emerald-500');
+                    btn.classList.add('bg-slate-800', 'text-slate-300');
+                }
+            });
+
+            document.getElementById('customHoursInput').value = todayShift.hours > 0 ? todayShift.hours : '';
+
+            // Today's Tips
+            const todayTips = state.tips
+                .filter(t => t.date === todayStr)
+                .reduce((sum, t) => sum + t.amount, 0);
+            document.getElementById('todayTipsBadge').textContent = `Сегодня: ${todayTips.toLocaleString()} ₽`;
+
+            // Nearest Payout Card
+            const forecast = calculateNearestPayoutForecast();
+            document.getElementById('forecastAmount').textContent = `${forecast.amount.toLocaleString()} ₽`;
+            document.getElementById('forecastHours').textContent = `${forecast.hours} ч`;
+            document.getElementById('payoutDateText').textContent = forecast.payoutDateStr;
+            document.getElementById('periodBadge').textContent = forecast.periodLabel;
+        }
+
+        function setTodayHours(hours) {
+            const todayStr = getISODateStr();
+            if (!state.shifts[todayStr]) {
+                state.shifts[todayStr] = { hours: 0, x2: false };
+            }
+            state.shifts[todayStr].hours = hours;
+            if (hours === 0) state.shifts[todayStr].x2 = false;
+            
+            saveState();
+            renderAll();
+            showToast(`Смена на сегодня: ${hours} ч`);
+        }
+
+        function saveCustomHours() {
+            const val = parseFloat(document.getElementById('customHoursInput').value);
+            if (isNaN(val) || val < 0 || val > 24) {
+                showToast("Введите корректное количество часов (0-24)", "error");
+                return;
+            }
+            setTodayHours(val);
+        }
+
+        function toggleTodayX2() {
+            const todayStr = getISODateStr();
+            const checked = document.getElementById('todayX2Toggle').checked;
+            if (!state.shifts[todayStr]) {
+                state.shifts[todayStr] = { hours: 8, x2: checked };
+            } else {
+                state.shifts[todayStr].x2 = checked;
+            }
+            saveState();
+            renderAll();
+            showToast(checked ? "Активирована х2 ставка 🎉" : "Обычная ставка");
+        }
+
+        function addTip(amount, comment = "") {
+            const todayStr = getISODateStr();
+            state.tips.push({
+                id: Date.now(),
+                date: todayStr,
+                amount: parseFloat(amount),
+                comment
+            });
+            saveState();
+            renderAll();
+            showToast(`Чаевые +${amount} ₽ добавлены!`);
+        }
+
+        function updateHourEquivalent() {
+            const amt = parseFloat(document.getElementById('payoutAmount').value) || 0;
+            const rate = state.settings.hourlyRate || 350;
+            const equiv = (amt / rate).toFixed(1);
+            document.getElementById('payoutHourEquiv').textContent = `${equiv} ч`;
+        }
+
+        function handlePayoutSubmit(e) {
+            e.preventDefault();
+            const type = document.getElementById('payoutType').value;
+            const amount = parseFloat(document.getElementById('payoutAmount').value);
+            const comment = document.getElementById('payoutComment').value.trim();
+
+            if (!amount || amount <= 0) return;
+
+            state.payouts.push({
+                id: Date.now(),
+                date: getISODateStr(),
+                type,
+                amount,
+                comment
+            });
+
+            document.getElementById('payoutAmount').value = '';
+            document.getElementById('payoutComment').value = '';
+            updateHourEquivalent();
+
+            saveState();
+            renderAll();
+            showToast("Получение успешно записано!");
+        }
+
+        function renderRecentOperations() {
+            const list = document.getElementById('recentOperationsList');
+            list.innerHTML = '';
+
+            // Combine tips and payouts
+            const items = [];
+            
+            state.tips.forEach(t => {
+                items.push({
+                    type: 'tip',
+                    title: 'Чаевые',
+                    date: t.date,
+                    amount: t.amount,
+                    comment: t.comment,
+                    icon: 'fa-coins text-amber-400',
+                    id: t.id
+                });
+            });
+
+            const typeNames = {
+                advance: 'Аванс',
+                salary: 'Зарплата',
+                bonus: 'Премия',
+                vacation: 'Отпускные'
+            };
+
+            state.payouts.forEach(p => {
+                items.push({
+                    type: 'payout',
+                    title: typeNames[p.type] || 'Выплата',
+                    date: p.date,
+                    amount: p.amount,
+                    comment: p.comment,
+                    icon: 'fa-wallet text-indigo-400',
+                    id: p.id
+                });
+            });
+
+            // Sort by Date DESC
+            items.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            if (items.length === 0) {
+                list.innerHTML = `<div class="text-xs text-slate-500 py-3 text-center">История операций пуста</div>`;
+                return;
+            }
+
+            items.slice(0, 15).forEach(item => {
+                const el = document.createElement('div');
+                el.className = 'flex items-center justify-between p-2.5 rounded-xl bg-slate-800/50 border border-slate-700/40 text-xs';
+                el.innerHTML = `
+                    <div class="flex items-center space-x-2.5">
+                        <i class="fa-solid ${item.icon}"></i>
+                        <div>
+                            <div class="font-bold text-slate-200">${item.title} <span class="text-[10px] text-slate-500 font-normal">(${formatRuDate(item.date)})</span></div>
+                            ${item.comment ? `<div class="text-[10px] text-slate-400 truncate max-w-[150px]">${item.comment}</div>` : ''}
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <span class="font-black text-slate-100">+${item.amount.toLocaleString()} ₽</span>
+                        <button onclick="deleteOperation('${item.type}', ${item.id})" class="text-slate-600 hover:text-rose-400 p-1 transition">
+                            <i class="fa-solid fa-trash text-[10px]"></i>
+                        </button>
+                    </div>
+                `;
+                list.appendChild(el);
+            });
+        }
+
+        function deleteOperation(type, id) {
+            if (type === 'tip') {
+                state.tips = state.tips.filter(t => t.id !== id);
+            } else if (type === 'payout') {
+                state.payouts = state.payouts.filter(p => p.id !== id);
+            }
+            saveState();
+            renderAll();
+            showToast("Запись удалена");
+        }
+
+        function renderCalendar() {
+            const grid = document.getElementById('calendarGrid');
+            grid.innerHTML = '';
+
+            const year = currentCalendarDate.getFullYear();
+            const month = currentCalendarDate.getMonth();
+
+            // Month Header Title
+            const monthNames = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"];
+            document.getElementById('calendarMonthTitle').textContent = `${monthNames[month]} ${year}`;
+
+            // Disable Next Month Button if viewing current or future month
+            const today = new Date();
+            const isCurrentOrFuture = (year > today.getFullYear()) || (year === today.getFullYear() && month >= today.getMonth());
+            document.getElementById('nextMonthBtn').disabled = isCurrentOrFuture;
+
+            // First day of month & total days
+            const firstDay = new Date(year, month, 1);
+            let startingDay = firstDay.getDay() - 1; // 0 for Mon, 6 for Sun
+            if (startingDay === -1) startingDay = 6;
+
+            const totalDays = new Date(year, month + 1, 0).getDate();
+
+            // Empty slots for alignment
+            for (let i = 0; i < startingDay; i++) {
+                const empty = document.createElement('div');
+                empty.className = 'h-12 rounded-xl bg-slate-800/20';
+                grid.appendChild(empty);
+            }
+
+            let monthHours = 0;
+            let monthEarnings = 0;
+            let monthTips = 0;
+            const rate = state.settings.hourlyRate || 350;
+
+            const todayISO = getISODateStr(today);
+
+            for (let day = 1; day <= totalDays; day++) {
+                const dayDate = new Date(year, month, day);
+                const dateStr = getISODateStr(dayDate);
+                const shift = state.shifts[dateStr] || { hours: 0, x2: false };
+                
+                const isToday = dateStr === todayISO;
+                const isFuture = dayDate > today;
+
+                if (shift.hours > 0) {
+                    const mult = shift.x2 ? 2 : 1;
+                    monthHours += shift.hours;
+                    monthEarnings += shift.hours * rate * mult;
+                }
+
+                // Sum tips for date
+                state.tips.forEach(t => {
+                    if (t.date === dateStr) monthTips += t.amount;
+                });
+
+                const dayCell = document.createElement('div');
+                dayCell.className = `h-12 rounded-xl border flex flex-col items-center justify-between p-1 cursor-pointer transition relative ${
+                    isToday ? 'border-emerald-500 bg-emerald-950/20' : 'border-slate-800 bg-slate-800/40 hover:bg-slate-700/50'
+                } ${isFuture ? 'opacity-40 cursor-not-allowed' : ''}`;
+
+                if (!isFuture) {
+                    dayCell.onclick = () => openEditShiftModal(dateStr);
+                }
+
+                dayCell.innerHTML = `
+                    <div class="flex items-center justify-between w-full px-1">
+                        <span class="text-[10px] font-bold ${isToday ? 'text-emerald-400' : 'text-slate-400'}">${day}</span>
+                        ${shift.x2 ? '<span class="text-[9px] bg-amber-500/20 text-amber-400 px-1 rounded font-bold">x2</span>' : ''}
+                    </div>
+                    <div class="text-xs font-black ${shift.hours > 0 ? 'text-emerald-300' : 'text-slate-600'}">
+                        ${shift.hours > 0 ? shift.hours + 'ч' : '—'}
+                    </div>
+                `;
+
+                grid.appendChild(dayCell);
+            }
+
+            document.getElementById('monthTotalHours').textContent = `${monthHours} ч`;
+            document.getElementById('monthTotalShiftEarnings').textContent = `${monthEarnings.toLocaleString()} ₽`;
+            document.getElementById('monthTotalTips').textContent = `${monthTips.toLocaleString()} ₽`;
+        }
+
+        function changeCalendarMonth(delta) {
+            currentCalendarDate.setMonth(currentCalendarDate.getMonth() + delta);
+            renderCalendar();
+        }
+
+        function openEditShiftModal(dateStr) {
+            selectedShiftDateStr = dateStr;
+            const shift = state.shifts[dateStr] || { hours: 0, x2: false };
+            
+            document.getElementById('modalShiftDate').textContent = `Смена на ${formatRuDate(dateStr)}`;
+            document.getElementById('modalShiftHours').value = shift.hours;
+            document.getElementById('modalShiftX2').checked = !!shift.x2;
+
+            document.getElementById('editShiftModal').classList.remove('hidden');
+        }
+
+        function saveModalShift() {
+            if (!selectedShiftDateStr) return;
+            const hours = parseFloat(document.getElementById('modalShiftHours').value) || 0;
+            const x2 = document.getElementById('modalShiftX2').checked;
+
+            if (hours <= 0) {
+                delete state.shifts[selectedShiftDateStr];
+            } else {
+                state.shifts[selectedShiftDateStr] = { hours, x2 };
+            }
+
+            saveState();
+            closeModal('editShiftModal');
+            renderAll();
+            showToast("Смена обновлена");
+        }
+
+        function clearModalShift() {
+            if (!selectedShiftDateStr) return;
+            delete state.shifts[selectedShiftDateStr];
+            saveState();
+            closeModal('editShiftModal');
+            renderAll();
+            showToast("Смена удалена");
+        }
+
+        function renderAnalytics() {
+            const now = new Date();
+            const rate = state.settings.hourlyRate || 350;
+
+            // Collect 12 months data
+            const monthsMap = {};
+            const monthKeys = [];
+
+            for (let i = 11; i >= 0; i--) {
+                const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+                const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+                const label = d.toLocaleString('ru', { month: 'short' });
+                monthsMap[key] = { label, payouts: 0, tips: 0, shifts: 0 };
+                monthKeys.push(key);
+            }
+
+            // Calculate shift earnings
+            Object.keys(state.shifts).forEach(dateStr => {
+                const key = dateStr.substring(0, 7);
+                if (monthsMap[key]) {
+                    const shift = state.shifts[dateStr];
+                    const mult = shift.x2 ? 2 : 1;
+                    monthsMap[key].shifts += shift.hours * rate * mult;
+                }
+            });
+
+            // Calculate tips
+            state.tips.forEach(t => {
+                const key = t.date.substring(0, 7);
+                if (monthsMap[key]) {
+                    monthsMap[key].tips += t.amount;
+                }
+            });
+
+            // Calculate payouts
+            state.payouts.forEach(p => {
+                const key = p.date.substring(0, 7);
+                if (monthsMap[key]) {
+                    monthsMap[key].payouts += p.amount;
+                }
+            });
+
+            let annualTotal = 0;
+            let activeMonths = 0;
+            let annualTips = 0;
+            let bestMonthLabel = "--";
+            let bestMonthAmount = 0;
+
+            monthKeys.forEach(k => {
+                const m = monthsMap[k];
+                const totalIncome = m.payouts + m.tips; // Total recorded payout + tips
+                if (totalIncome > 0 || m.shifts > 0) activeMonths++;
+                
+                annualTotal += totalIncome;
+                annualTips += m.tips;
+
+                if (totalIncome > bestMonthAmount) {
+                    bestMonthAmount = totalIncome;
+                    bestMonthLabel = m.label;
+                }
+            });
+
+            const avgIncome = activeMonths > 0 ? Math.round(annualTotal / activeMonths) : 0;
+            const avgTips = activeMonths > 0 ? Math.round(annualTips / activeMonths) : 0;
+
+            document.getElementById('statsAnnualTotal').textContent = `${annualTotal.toLocaleString()} ₽`;
+            document.getElementById('statsMonthlyAvg').textContent = `${avgIncome.toLocaleString()} ₽`;
+            document.getElementById('statsTipsAvg').textContent = `${avgTips.toLocaleString()} ₽`;
+            document.getElementById('statsBestMonth').textContent = bestMonthLabel;
+            document.getElementById('statsBestMonthAmount').textContent = `${bestMonthAmount.toLocaleString()} ₽`;
+
+            renderCharts(monthKeys.map(k => monthsMap[k].label), monthKeys.map(k => monthsMap[k].payouts + monthsMap[k].tips), monthKeys.map(k => monthsMap[k].payouts), monthKeys.map(k => monthsMap[k].tips));
+        }
+
+        function renderCharts(labels, totalData, payoutData, tipData) {
+            // Line Chart
+            const ctxLine = document.getElementById('incomeLineChart')?.getContext('2d');
+            if (ctxLine) {
+                if (lineChartInstance) lineChartInstance.destroy();
+                lineChartInstance = new Chart(ctxLine, {
+                    type: 'line',
+                    data: {
+                        labels,
+                        datasets: [
+                            {
+                                label: 'Общий доход',
+                                data: totalData,
+                                borderColor: '#22c55e',
+                                backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                                fill: true,
+                                tension: 0.3
+                            },
+                            {
+                                label: 'Чаевые',
+                                data: tipData,
+                                borderColor: '#f59e0b',
+                                borderDash: [4, 4],
+                                fill: false,
+                                tension: 0.3
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { labels: { color: '#94a3b8', font: { size: 10 } } }
+                        },
+                        scales: {
+                            x: { ticks: { color: '#64748b', font: { size: 9 } }, grid: { display: false } },
+                            y: { ticks: { color: '#64748b', font: { size: 9 } }, grid: { color: '#1e293b' } }
+                        }
+                    }
+                });
+            }
+
+            // Doughnut Chart: Payout Breakdown
+            const ctxDoughnut = document.getElementById('payoutDoughnutChart')?.getContext('2d');
+            if (ctxDoughnut) {
+                const payoutTotals = { advance: 0, salary: 0, bonus: 0, vacation: 0, tips: 0 };
+                
+                state.payouts.forEach(p => {
+                    if (payoutTotals[p.type] !== undefined) payoutTotals[p.type] += p.amount;
+                });
+                state.tips.forEach(t => payoutTotals.tips += t.amount);
+
+                if (doughnutChartInstance) doughnutChartInstance.destroy();
+                doughnutChartInstance = new Chart(ctxDoughnut, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Аванс', 'Зарплата', 'Премия', 'Отпускные', 'Чаевые'],
+                        datasets: [{
+                            data: [payoutTotals.advance, payoutTotals.salary, payoutTotals.bonus, payoutTotals.vacation, payoutTotals.tips],
+                            backgroundColor: ['#6366f1', '#10b981', '#3b82f6', '#ec4899', '#f59e0b'],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'right', labels: { color: '#94a3b8', font: { size: 10 } } }
+                        }
+                    }
+                });
+            }
+        }
+
+        function renderSettings() {
+            document.getElementById('settingRateInput').value = state.settings.hourlyRate || 350;
+        }
+
+        function saveHourlyRateSetting() {
+            const rate = parseFloat(document.getElementById('settingRateInput').value);
+            if (isNaN(rate) || rate <= 0) {
+                showToast("Введите корректную ставку", "error");
+                return;
+            }
+            state.settings.hourlyRate = rate;
+            saveState();
+            renderAll();
+            showToast("Почасовая ставка обновлена!");
+        }
+
+        function exportDataJSON() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `salary_backup_${getISODateStr()}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+            showToast("Экспорт данных успешно выполнен!");
+        }
+
+        function importDataJSON(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    if (imported && typeof imported === 'object') {
+                        state = { ...state, ...imported };
+                        saveState();
+                        renderAll();
+                        showToast("Данные успешно импортированы!");
+                    }
+                } catch (err) {
+                    showToast("Ошибка при чтении файла JSON", "error");
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function confirmResetData() {
+            document.getElementById('confirmModalTitle').textContent = "Сброс всех данных";
+            document.getElementById('confirmModalMessage').textContent = "Вы действительно хотите очистить всю историю смен, чаевых и выплат? Это действие необратимо.";
+            document.getElementById('confirmModalBtn').onclick = () => {
+                state.shifts = {};
+                state.tips = [];
+                state.payouts = [];
+                saveState();
+                closeModal('confirmModal');
+                renderAll();
+                showToast("Все данные сброшены");
+            };
+            document.getElementById('confirmModal').classList.remove('hidden');
+        }
+
+        // Navigation Tabs Switching
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active-tab'));
+
+            const targetTab = document.getElementById(`tab-${tabId}`);
+            const targetNav = document.getElementById(`nav-${tabId}`);
+
+            if (targetTab) targetTab.classList.remove('hidden');
+            if (targetNav) targetNav.classList.add('active-tab');
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Modal Helpers
+        function closeModal(id) {
+            document.getElementById(id).classList.add('hidden');
+        }
+
+        function openCustomTipModal() {
+            document.getElementById('customTipAmount').value = '';
+            document.getElementById('customTipComment').value = '';
+            document.getElementById('customTipModal').classList.remove('hidden');
+        }
+
+        function saveCustomTip() {
+            const amount = parseFloat(document.getElementById('customTipAmount').value);
+            const comment = document.getElementById('customTipComment').value.trim();
+            if (!amount || amount <= 0) return;
+
+            addTip(amount, comment);
+            closeModal('customTipModal');
+        }
+
+        // Custom Toast System
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            
+            const isError = type === 'error';
+            toast.className = `px-4 py-2.5 rounded-xl text-xs font-bold text-white shadow-xl transition-all duration-300 transform translate-y-2 opacity-0 flex items-center space-x-2 ${
+                isError ? 'bg-rose-600' : 'bg-emerald-600'
+            }`;
+            
+            toast.innerHTML = `
+                <i class="fa-solid ${isError ? 'fa-circle-exclamation' : 'fa-circle-check'}"></i>
+                <span>${message}</span>
+            `;
+
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 10);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', '-translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 2500);
+        }
+
+        function initPWA() {
+            if ('serviceWorker' in navigator) {
+                const swCode = `
+                    const CACHE = 'salary-v1';
+                    self.addEventListener('install', e => self.skipWaiting());
+                    self.addEventListener('activate', e => self.clients.claim());
+                    self.addEventListener('fetch', e => {
+                        e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
+                    });
+                `;
+                const blob = new Blob([swCode], { type: 'application/javascript' });
+                const blobUrl = URL.createObjectURL(blob);
+                navigator.serviceWorker.register(blobUrl).catch(() => {});
+            }
+        }
+    </script>
+</body>
+</html>
