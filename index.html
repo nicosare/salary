@@ -301,6 +301,15 @@
                 </div>
             </div>
 
+            <!-- Monthly income cards -->
+            <div class="space-y-3">
+                <div class="flex items-center justify-between px-1">
+                    <h3 class="text-xs font-bold text-slate-300 uppercase tracking-wider">Доход по месяцам</h3>
+                    <span class="text-[10px] text-slate-500">Последние 12 месяцев</span>
+                </div>
+                <div id="monthlyIncomeCards" class="grid grid-cols-1 gap-2"></div>
+            </div>
+
             <!-- Line Chart: Monthly Income Dynamics -->
             <div class="glass-card rounded-2xl p-4 space-y-2">
                 <h3 class="text-xs font-bold text-slate-300 uppercase tracking-wider">Динамика доходов</h3>
@@ -528,67 +537,64 @@
             return `${parts[2]}.${parts[1]}.${parts[0]}`;
         }
 
-        /**
-         * CORE LOGIC BUGFIX:
-         * Calculates forecast strictly based on shifts worked in current half-month calculation period:
-         * - Days 1–15 of month -> Period: 1st..15th -> Payout Target: 25th
-         * - Days 16–end of month -> Period: 16th..end -> Payout Target: 10th of next month
-         * Weekend Adjustment: If target payout date falls on Saturday (6) or Sunday (0), move to Friday!
-         * Advances/Payouts ARE NOT SUBTRACTED.
-         */
+        // Payment schedule: 1–15 -> 25th of the same month; 16–end -> 10th of the next month.
+        // Weekend payments move back to Friday. Forecast includes only shifts already worked.
+        function adjustPayoutDate(date) {
+            const adjusted = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+            if (adjusted.getDay() === 6) adjusted.setDate(adjusted.getDate() - 1);
+            else if (adjusted.getDay() === 0) adjusted.setDate(adjusted.getDate() - 2);
+            return adjusted;
+        }
+
         function getCalculationPeriodAndPayoutDate(refDate = new Date()) {
-            const year = refDate.getFullYear();
-            const month = refDate.getMonth();
-            const day = refDate.getDate();
+            const today = new Date(refDate.getFullYear(), refDate.getMonth(), refDate.getDate());
+            const candidates = [];
 
-            let periodStart, periodEnd, rawPayoutDate, periodLabel;
-
-            if (day <= 15) {
-                // First half of month
-                periodStart = new Date(year, month, 1);
-                periodEnd = new Date(year, month, 15, 23, 59, 59);
-                rawPayoutDate = new Date(year, month, 25);
-                periodLabel = "1–15 число";
-            } else {
-                // Second half of month
-                periodStart = new Date(year, month, 16);
+            // Build neighbouring payout periods so a weekend-adjusted payout that has already passed is skipped.
+            for (let offset = -1; offset <= 1; offset++) {
+                const monthStart = new Date(today.getFullYear(), today.getMonth() + offset, 1);
+                const year = monthStart.getFullYear();
+                const month = monthStart.getMonth();
                 const lastDay = new Date(year, month + 1, 0).getDate();
-                periodEnd = new Date(year, month, lastDay, 23, 59, 59);
-                rawPayoutDate = new Date(year, month + 1, 10);
-                
-                const nextMonthRu = rawPayoutDate.toLocaleString('ru', { month: 'short' });
-                periodLabel = `16–${lastDay} число`;
+
+                const firstHalfPayout = adjustPayoutDate(new Date(year, month, 25));
+                candidates.push({
+                    periodStart: new Date(year, month, 1),
+                    periodEnd: new Date(year, month, 15, 23, 59, 59, 999),
+                    payoutDate: firstHalfPayout,
+                    rawPayoutDate: new Date(year, month, 25),
+                    periodLabel: "1–15 число"
+                });
+
+                const secondHalfPayout = adjustPayoutDate(new Date(year, month + 1, 10));
+                candidates.push({
+                    periodStart: new Date(year, month, 16),
+                    periodEnd: new Date(year, month, lastDay, 23, 59, 59, 999),
+                    payoutDate: secondHalfPayout,
+                    rawPayoutDate: new Date(year, month + 1, 10),
+                    periodLabel: `16–${lastDay} число`
+                });
             }
 
-            // Weekend shift rule for payout date (Sat -> Fri -1, Sun -> Fri -2)
-            let adjustedPayoutDate = new Date(rawPayoutDate);
-            const dayOfWeek = adjustedPayoutDate.getDay();
-            if (dayOfWeek === 6) { // Saturday
-                adjustedPayoutDate.setDate(adjustedPayoutDate.getDate() - 1);
-            } else if (dayOfWeek === 0) { // Sunday
-                adjustedPayoutDate.setDate(adjustedPayoutDate.getDate() - 2);
-            }
-
-            return {
-                periodStart,
-                periodEnd,
-                payoutDate: adjustedPayoutDate,
-                rawPayoutDate,
-                periodLabel
-            };
+            candidates.sort((a, b) => a.payoutDate - b.payoutDate);
+            // Today counts as a payout date only if the actual (weekend-adjusted) date is today or later.
+            return candidates.find(item => item.payoutDate >= today) || candidates[candidates.length - 1];
         }
 
         function calculateNearestPayoutForecast() {
-            const { periodStart, periodEnd, payoutDate, periodLabel } = getCalculationPeriodAndPayoutDate(new Date());
-            
+            const period = getCalculationPeriodAndPayoutDate(new Date());
+            const { periodStart, periodEnd, payoutDate, periodLabel } = period;
+            const todayEnd = new Date();
+            todayEnd.setHours(23, 59, 59, 999);
+            const forecastEnd = periodEnd < todayEnd ? periodEnd : todayEnd;
+
             let totalHours = 0;
             let totalEarnings = 0;
             const rate = state.settings.hourlyRate || 350;
 
-            // Iterate over shifts
             Object.keys(state.shifts).forEach(dateStr => {
                 const shiftDate = new Date(dateStr + 'T00:00:00');
-                if (shiftDate >= periodStart && shiftDate <= periodEnd) {
+                if (shiftDate >= periodStart && shiftDate <= forecastEnd) {
                     const shift = state.shifts[dateStr];
                     const hours = parseFloat(shift.hours) || 0;
                     const mult = shift.x2 ? 2 : 1;
@@ -597,10 +603,9 @@
                 }
             });
 
-            // Format Payout Date display
             const dayNum = payoutDate.getDate();
-            const monthRu = payoutDate.toLocaleString('ru', { month: 'long' });
-            const dayOfWeekRu = payoutDate.toLocaleString('ru', { weekday: 'short' });
+            const monthRu = payoutDate.toLocaleString('ru-RU', { month: 'long' });
+            const dayOfWeekRu = payoutDate.toLocaleString('ru-RU', { weekday: 'short' });
 
             return {
                 amount: totalEarnings,
@@ -1013,7 +1018,37 @@
             document.getElementById('statsBestMonth').textContent = bestMonthLabel;
             document.getElementById('statsBestMonthAmount').textContent = `${bestMonthAmount.toLocaleString()} ₽`;
 
+            renderMonthlyIncomeCards(monthKeys, monthsMap);
             renderCharts(monthKeys.map(k => monthsMap[k].label), monthKeys.map(k => monthsMap[k].payouts + monthsMap[k].tips), monthKeys.map(k => monthsMap[k].payouts), monthKeys.map(k => monthsMap[k].tips));
+        }
+
+        function renderMonthlyIncomeCards(monthKeys, monthsMap) {
+            const container = document.getElementById('monthlyIncomeCards');
+            if (!container) return;
+            container.innerHTML = '';
+
+            [...monthKeys].reverse().forEach(key => {
+                const month = monthsMap[key];
+                const received = month.payouts + month.tips;
+                const [year, monthNumber] = key.split('-').map(Number);
+                const monthDate = new Date(year, monthNumber - 1, 1);
+                const label = monthDate.toLocaleString('ru-RU', { month: 'long', year: 'numeric' });
+                const card = document.createElement('div');
+                card.className = 'glass-card rounded-2xl p-4 flex items-center justify-between gap-3';
+                card.innerHTML = `
+                    <div class="min-w-0">
+                        <div class="text-sm font-bold text-slate-200 capitalize">${label}</div>
+                        <div class="mt-1 text-[11px] text-slate-400">Выплаты: ${month.payouts.toLocaleString('ru-RU')} ₽</div>
+                        <div class="text-[11px] text-amber-400">Чаевые: ${month.tips.toLocaleString('ru-RU')} ₽</div>
+                        <div class="text-[11px] text-slate-500">Начислено за смены: ${month.shifts.toLocaleString('ru-RU')} ₽</div>
+                    </div>
+                    <div class="text-right shrink-0">
+                        <div class="text-[10px] text-slate-500 uppercase font-semibold">Получено</div>
+                        <div class="text-lg font-black ${received > 0 ? 'text-emerald-400' : 'text-slate-500'}">${received.toLocaleString('ru-RU')} ₽</div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
         }
 
         function renderCharts(labels, totalData, payoutData, tipData) {
