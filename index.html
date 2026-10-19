@@ -272,6 +272,28 @@
                 </div>
             </div>
 
+            <!-- Expected Payouts by Half-Month (shift earnings only, excluding tips) -->
+            <div class="glass-card rounded-2xl p-4 space-y-3">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-wallet text-indigo-400"></i>
+                    <h3 class="text-xs font-bold text-slate-300 uppercase tracking-wider">Ожидаемая выплата без чаевых</h3>
+                </div>
+                <div class="grid grid-cols-3 gap-2 text-center">
+                    <div class="rounded-xl bg-slate-800/60 p-2">
+                        <div class="text-[10px] leading-tight text-slate-400">За 1–15 число</div>
+                        <div id="monthFirstHalfPayout" class="text-sm font-black text-indigo-300 mt-1">0 ₽</div>
+                    </div>
+                    <div class="rounded-xl bg-slate-800/60 p-2">
+                        <div class="text-[10px] leading-tight text-slate-400">За 16–конец</div>
+                        <div id="monthSecondHalfPayout" class="text-sm font-black text-indigo-300 mt-1">0 ₽</div>
+                    </div>
+                    <div class="rounded-xl bg-indigo-500/10 border border-indigo-500/20 p-2">
+                        <div class="text-[10px] leading-tight text-slate-300">Всего</div>
+                        <div id="monthExpectedPayoutTotal" class="text-sm font-black text-white mt-1">0 ₽</div>
+                    </div>
+                </div>
+            </div>
+
         </section>
 
         <!-- TAB 3: Analytics -->
@@ -854,6 +876,8 @@
 
             let monthHours = 0;
             let monthEarnings = 0;
+            let firstHalfEarnings = 0;
+            let secondHalfEarnings = 0;
             let monthTips = 0;
             const rate = state.settings.hourlyRate || 350;
 
@@ -869,8 +893,14 @@
 
                 if (shift.hours > 0) {
                     const mult = shift.x2 ? 2 : 1;
+                    const shiftEarnings = shift.hours * rate * mult;
                     monthHours += shift.hours;
-                    monthEarnings += shift.hours * rate * mult;
+                    monthEarnings += shiftEarnings;
+                    if (day <= 15) {
+                        firstHalfEarnings += shiftEarnings;
+                    } else {
+                        secondHalfEarnings += shiftEarnings;
+                    }
                 }
 
                 // Sum tips for date
@@ -901,8 +931,11 @@
             }
 
             document.getElementById('monthTotalHours').textContent = `${monthHours} ч`;
-            document.getElementById('monthTotalShiftEarnings').textContent = `${monthEarnings.toLocaleString()} ₽`;
-            document.getElementById('monthTotalTips').textContent = `${monthTips.toLocaleString()} ₽`;
+            document.getElementById('monthTotalShiftEarnings').textContent = `${monthEarnings.toLocaleString('ru-RU')} ₽`;
+            document.getElementById('monthTotalTips').textContent = `${monthTips.toLocaleString('ru-RU')} ₽`;
+            document.getElementById('monthFirstHalfPayout').textContent = `${firstHalfEarnings.toLocaleString('ru-RU')} ₽`;
+            document.getElementById('monthSecondHalfPayout').textContent = `${secondHalfEarnings.toLocaleString('ru-RU')} ₽`;
+            document.getElementById('monthExpectedPayoutTotal').textContent = `${(firstHalfEarnings + secondHalfEarnings).toLocaleString('ru-RU')} ₽`;
         }
 
         function changeCalendarMonth(delta) {
