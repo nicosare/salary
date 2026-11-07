@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html lang="ru" class="dark">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Учёт Зарплаты и Смен</title>
+    <title>Зарплата — учёт смен и дохода</title>
     <!-- PWA Settings -->
-    <meta name="theme-color" content="#0f172a">
+    <meta name="theme-color" content="#f3f7ff">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Зарплата">
@@ -58,15 +58,59 @@
             color: #38bdf8 !important;
         }
     </style>
+
+    <style>
+        :root { color-scheme: light; --q-bg:#f3f7ff; --q-surface:#fff; --q-text:#183252; --q-muted:#71839c; --q-line:#e3ebf6; --q-blue:#2875e8; --q-blue-dark:#1f63cf; --q-shadow:0 8px 24px rgba(30,75,135,.065); }
+        html, body { background:var(--q-bg)!important; color:var(--q-text)!important; }
+        body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; user-select:none; padding-bottom:calc(5.5rem + env(safe-area-inset-bottom)); }
+        input, textarea, select { user-select:text; }
+        ::-webkit-scrollbar-track { background:#edf2fa; }
+        ::-webkit-scrollbar-thumb { background:#c8d6e9; border-radius:8px; }
+        header { background:rgba(255,255,255,.92)!important; border-color:var(--q-line)!important; box-shadow:0 1px 10px rgba(34,75,130,.035); }
+        .brand-mark { width:40px;height:40px;border-radius:14px;display:flex;align-items:center;justify-content:center;background:linear-gradient(145deg,#236de1,#4d9aff);color:#fff;font-size:22px;font-weight:900;letter-spacing:-1px;box-shadow:0 5px 14px rgba(39,113,226,.22); }
+        .glass-card { background:var(--q-surface)!important;border:1px solid var(--q-line)!important;box-shadow:var(--q-shadow);backdrop-filter:none!important; }
+        .dashboard-hero { background:linear-gradient(135deg,#e8f2ff 0%,#f7faff 58%,#fff 100%)!important;border-color:#d9e8ff!important; }
+        #forecastAmount { color:#17375f!important; }
+        #forecastHours { color:var(--q-blue)!important; }
+        .tab-heading { padding:2px 2px 1px; }
+        .tab-heading h2 { margin:0;color:var(--q-text);font-size:21px;line-height:1.25;font-weight:850;letter-spacing:-.45px; }
+        .tab-heading p { margin:5px 0 0;color:var(--q-muted);font-size:12px;line-height:1.45; }
+        .active-tab { color:var(--q-blue)!important; }
+        nav { height:calc(5rem + env(safe-area-inset-bottom))!important;padding-bottom:env(safe-area-inset-bottom)!important;background:rgba(255,255,255,.97)!important;border-color:var(--q-line)!important;box-shadow:0 -5px 24px rgba(32,70,120,.055); }
+        nav .nav-btn { color:#8494aa; }
+        nav .nav-btn.active-tab { color:var(--q-blue)!important; }
+        [class~="text-white"],[class~="text-slate-100"],[class~="text-slate-200"],[class~="text-slate-300"] { color:#203957!important; }
+        [class~="text-slate-400"] { color:#71839c!important; }
+        [class~="text-slate-500"] { color:#8a9ab0!important; }
+        [class~="text-slate-600"] { color:#a1aec0!important; }
+        [class~="text-emerald-400"],[class~="text-emerald-300"],[class~="text-indigo-400"],[class~="text-indigo-300"] { color:var(--q-blue)!important; }
+        [class~="bg-slate-800"],[class~="bg-slate-700"] { background-color:#f1f6fd!important; }
+        [class*="bg-slate-800/"],[class*="bg-slate-700/"] { background-color:#f3f7fd!important; }
+        [class~="border-slate-800"],[class~="border-slate-700"],[class~="border-slate-600"] { border-color:#e2eaf5!important; }
+        [class~="bg-emerald-600"],[class~="bg-emerald-500"],[class~="bg-indigo-600"] { background-color:var(--q-blue)!important; }
+        [class~="bg-emerald-600"]:hover,[class~="bg-emerald-500"]:hover,[class~="bg-indigo-600"]:hover { background-color:var(--q-blue-dark)!important; }
+        [class~="bg-emerald-500/10"],[class~="bg-indigo-500/10"] { background-color:#edf4ff!important; }
+        [class~="border-emerald-500"],[class~="border-indigo-500/20"] { border-color:#cfe1ff!important; }
+        input,select,textarea { background-color:#f7faff!important;color:var(--q-text)!important;border-color:#dce7f5!important; }
+        input::placeholder,textarea::placeholder { color:#9aa9bd!important; }
+        input:focus,select:focus,textarea:focus { border-color:#79aaf0!important;box-shadow:0 0 0 3px rgba(40,117,232,.10); }
+        button { -webkit-tap-highlight-color:transparent; }
+        .monthly-income-card { padding:16px; }
+        .month-payout-cell { background:#f5f8fd;border:1px solid #edf2f8;border-radius:12px;padding:9px 10px;min-width:0; }
+        .month-payout-cell span { display:block;color:#71839c;font-size:10px;line-height:1.3; }
+        .month-payout-cell strong { display:block;color:#24466e;font-size:13px;line-height:1.35;margin-top:3px;font-weight:800; }
+        .monthly-total-row { display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:12px;padding:11px 12px;border-radius:13px;background:#edf4ff;color:#31577f;font-size:11px;font-weight:700; }
+        .monthly-total-row strong { color:#1c64d1;font-size:17px;font-weight:900;white-space:nowrap; }
+        .monthly-earned-note { margin-top:9px;color:#8696ac;font-size:10px;line-height:1.45; }
+        @media(max-width:360px) { .tab-heading h2 {font-size:19px;} .month-payout-cell {padding:8px;} .month-payout-cell strong {font-size:12px;} }
+    </style>
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen pb-28">
 
     <!-- Top Header Bar -->
     <header class="sticky top-0 z-40 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 px-4 py-3 flex items-center justify-between">
         <div class="flex items-center space-x-3">
-            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center text-slate-900 shadow-lg shadow-emerald-500/20 font-black text-xl">
-                ₽
-            </div>
+            <div class="brand-mark" aria-label="Зарплата">Q</div>
             <div>
                 <h1 class="text-base font-bold leading-tight">Учёт Зарплаты</h1>
                 <p id="headerRateBadge" class="text-xs text-emerald-400 font-medium">Ставка: 350 ₽/ч</p>
@@ -82,9 +126,10 @@
 
         <!-- TAB 1: Main Dashboard -->
         <section id="tab-dashboard" class="tab-content space-y-5">
+            <div class="tab-heading"><h2>Главная</h2><p>Смены, выплаты и чаевые — в одном месте</p></div>
             
             <!-- Nearest Payout Forecast Card -->
-            <div class="glass-card rounded-2xl p-5 relative overflow-hidden bg-gradient-to-br from-slate-800/90 via-slate-800/50 to-indigo-950/40 border border-indigo-500/20 shadow-xl">
+            <div class="glass-card dashboard-hero rounded-2xl p-5 relative overflow-hidden shadow-xl">
                 <div class="absolute -right-6 -bottom-6 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none"></div>
                 
                 <div class="flex items-center justify-between mb-2">
@@ -116,7 +161,7 @@
 
                 <div class="mt-4 pt-3 border-t border-slate-700/50 flex items-center text-[11px] text-slate-400">
                     <i class="fa-solid fa-circle-info text-indigo-400 mr-2 text-xs"></i>
-                    <span>Расчёт строго по сменам. Авансы и выплаты не уменьшают прогноз.</span>
+                    <span>Прогноз рассчитан по отработанным сменам. Записанные выплаты не вычитаются.</span>
                 </div>
             </div>
 
@@ -181,7 +226,7 @@
             <div class="glass-card rounded-2xl p-4 space-y-3">
                 <div class="flex items-center space-x-2">
                     <i class="fa-solid fa-wallet text-indigo-400"></i>
-                    <h2 class="text-sm font-bold text-slate-200">Фиксация получений</h2>
+                    <h2 class="text-sm font-bold text-slate-200">Добавить выплату</h2>
                 </div>
 
                 <form id="payoutForm" onsubmit="handlePayoutSubmit(event)" class="space-y-3">
@@ -202,7 +247,7 @@
                     </div>
 
                     <div class="flex items-center justify-between text-xs bg-slate-800/40 p-2.5 rounded-xl border border-slate-700/40">
-                        <span class="text-slate-400">Эквивалент в часах:</span>
+                        <span class="text-slate-400">Эквивалент по ставке:</span>
                         <span id="payoutHourEquiv" class="font-bold text-indigo-300">0.0 ч</span>
                     </div>
 
@@ -220,7 +265,7 @@
             <div class="glass-card rounded-2xl p-4 space-y-3">
                 <div class="flex items-center justify-between">
                     <h2 class="text-sm font-bold text-slate-200">Последние операции</h2>
-                    <span class="text-[11px] text-slate-400">За 30 дней</span>
+                    <span class="text-[11px] text-slate-400">До 15 записей</span>
                 </div>
                 <div id="recentOperationsList" class="space-y-2 max-h-48 overflow-y-auto pr-1">
                     <!-- Dynamic Items -->
@@ -231,6 +276,7 @@
 
         <!-- TAB 2: Shifts & Calendar -->
         <section id="tab-shifts" class="tab-content hidden space-y-4">
+            <div class="tab-heading"><h2>Календарь смен</h2><p>Выбирай дату, чтобы добавить или изменить часы</p></div>
             
             <!-- Calendar Navigation -->
             <div class="glass-card rounded-2xl p-4 space-y-4">
@@ -262,7 +308,7 @@
                     <div id="monthTotalHours" class="text-base font-black text-emerald-400 mt-0.5">0 ч</div>
                 </div>
                 <div>
-                    <div class="text-[10px] text-slate-400 uppercase">Заработок</div>
+                    <div class="text-[10px] text-slate-400 uppercase">Начислено</div>
                     <div id="monthTotalShiftEarnings" class="text-base font-black text-white mt-0.5">0 ₽</div>
                 </div>
                 <div>
@@ -275,8 +321,9 @@
             <div class="glass-card rounded-2xl p-4 space-y-3">
                 <div class="flex items-center space-x-2">
                     <i class="fa-solid fa-wallet text-indigo-400"></i>
-                    <h3 class="text-xs font-bold text-slate-300 uppercase tracking-wider">Ожидаемая выплата без чаевых</h3>
+                    <h3 class="text-xs font-bold text-slate-300 uppercase tracking-wider">Начислено по сменам</h3>
                 </div>
+                <p class="text-[11px] text-slate-400 -mt-1">Расчёт по часам и ставке. Фактические выплаты и чаевые учитываются отдельно.</p>
                 <div class="grid grid-cols-3 gap-2 text-center">
                     <div class="rounded-xl bg-slate-800/60 p-2">
                         <div class="text-[10px] leading-tight text-slate-400">За 1–15 число</div>
@@ -297,28 +344,39 @@
 
         <!-- TAB 3: Analytics -->
         <section id="tab-analytics" class="tab-content hidden space-y-4">
+            <div class="tab-heading"><h2>Статистика доходов</h2><p>Фактически полученные деньги и начисления по сменам — отдельно</p></div>
             
             <!-- Summary Stats Cards Grid -->
             <div class="grid grid-cols-2 gap-3">
                 <div class="glass-card rounded-2xl p-3.5 space-y-1">
-                    <div class="text-[11px] text-slate-400 font-medium">Доход за 12 мес.</div>
+                    <div class="text-[11px] text-slate-400 font-medium">Получено за 12 мес.</div>
                     <div id="statsAnnualTotal" class="text-lg font-black text-white">0 ₽</div>
-                    <div class="text-[10px] text-slate-500">Выплаты + Чаевые</div>
+                    <div class="text-[10px] text-slate-500">Выплаты + чаевые</div>
                 </div>
                 <div class="glass-card rounded-2xl p-3.5 space-y-1">
-                    <div class="text-[11px] text-slate-400 font-medium">Средний доход/мес</div>
+                    <div class="text-[11px] text-slate-400 font-medium">Среднее за месяц</div>
                     <div id="statsMonthlyAvg" class="text-lg font-black text-emerald-400">0 ₽</div>
-                    <div class="text-[10px] text-slate-500">За активные месяцы</div>
+                    <div class="text-[10px] text-slate-500">В месяцы с получениями</div>
                 </div>
                 <div class="glass-card rounded-2xl p-3.5 space-y-1">
-                    <div class="text-[11px] text-slate-400 font-medium">Средние чаевые/мес</div>
+                    <div class="text-[11px] text-slate-400 font-medium">Чаевые в среднем</div>
                     <div id="statsTipsAvg" class="text-lg font-black text-amber-400">0 ₽</div>
-                    <div class="text-[10px] text-slate-500">Среднее значение</div>
+                    <div class="text-[10px] text-slate-500">За активный месяц</div>
                 </div>
                 <div class="glass-card rounded-2xl p-3.5 space-y-1">
                     <div class="text-[11px] text-slate-400 font-medium">Лучший месяц</div>
                     <div id="statsBestMonth" class="text-sm font-bold text-indigo-300 truncate">--</div>
                     <div id="statsBestMonthAmount" class="text-[11px] text-slate-400">0 ₽</div>
+                </div>
+                <div class="glass-card rounded-2xl p-3.5 space-y-1">
+                    <div class="text-[11px] text-slate-400 font-medium">Начислено по сменам</div>
+                    <div id="statsShiftTotal" class="text-lg font-black text-indigo-300">0 ₽</div>
+                    <div class="text-[10px] text-slate-500">Расчётная сумма за 12 мес.</div>
+                </div>
+                <div class="glass-card rounded-2xl p-3.5 space-y-1">
+                    <div class="text-[11px] text-slate-400 font-medium">Отработано часов</div>
+                    <div id="statsAnnualHours" class="text-lg font-black text-indigo-300">0 ч</div>
+                    <div class="text-[10px] text-slate-500">За последние 12 месяцев</div>
                 </div>
             </div>
 
@@ -333,7 +391,7 @@
 
             <!-- Line Chart: Monthly Income Dynamics -->
             <div class="glass-card rounded-2xl p-4 space-y-2">
-                <h3 class="text-xs font-bold text-slate-300 uppercase tracking-wider">Динамика доходов</h3>
+                <h3 class="text-xs font-bold text-slate-300 uppercase tracking-wider">Получено по месяцам</h3>
                 <div class="h-52 w-full relative">
                     <canvas id="incomeLineChart"></canvas>
                 </div>
@@ -341,7 +399,7 @@
 
             <!-- Doughnut Chart: Payment Types Breakdown -->
             <div class="glass-card rounded-2xl p-4 space-y-2">
-                <h3 class="text-xs font-bold text-slate-300 uppercase tracking-wider">Структура доходов</h3>
+                <h3 class="text-xs font-bold text-slate-300 uppercase tracking-wider">Структура получений · 12 мес.</h3>
                 <div class="h-48 w-full relative flex items-center justify-center">
                     <canvas id="payoutDoughnutChart"></canvas>
                 </div>
@@ -351,6 +409,7 @@
 
         <!-- TAB 4: Settings -->
         <section id="tab-settings" class="tab-content hidden space-y-4">
+            <div class="tab-heading"><h2>Настройки</h2><p>Ставка, резервные копии и данные приложения</p></div>
             
             <div class="glass-card rounded-2xl p-4 space-y-4">
                 <h2 class="text-sm font-bold text-slate-200 border-b border-slate-700/60 pb-2">Основные настройки</h2>
@@ -526,10 +585,17 @@
         function loadState() {
             try {
                 const saved = localStorage.getItem(STORAGE_KEY);
-                if (saved) {
-                    const parsed = JSON.parse(saved);
-                    state = { ...state, ...parsed };
+                if (!saved) return;
+                const parsed = JSON.parse(saved);
+                if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+                    throw new Error('Некорректная структура сохранённых данных');
                 }
+                state = {
+                    settings: { ...state.settings, ...(parsed.settings && typeof parsed.settings === 'object' ? parsed.settings : {}) },
+                    shifts: parsed.shifts && typeof parsed.shifts === 'object' && !Array.isArray(parsed.shifts) ? parsed.shifts : {},
+                    tips: Array.isArray(parsed.tips) ? parsed.tips : [],
+                    payouts: Array.isArray(parsed.payouts) ? parsed.payouts : []
+                };
             } catch (e) {
                 console.error("Failed to load local state", e);
             }
@@ -556,6 +622,24 @@
             const parts = dateStr.split('-');
             if (parts.length !== 3) return dateStr;
             return `${parts[2]}.${parts[1]}.${parts[0]}`;
+        }
+
+        function escapeHTML(value) {
+            return String(value ?? '').replace(/[&<>"']/g, char => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            })[char]);
+        }
+
+        function getShiftRate(shift) {
+            const savedRate = Number(shift?.rate);
+            return Number.isFinite(savedRate) && savedRate > 0
+                ? savedRate
+                : (Number(state.settings.hourlyRate) || 350);
+        }
+
+        function calculateShiftEarnings(shift) {
+            const hours = Math.max(0, Number(shift?.hours) || 0);
+            return hours * getShiftRate(shift) * (shift?.x2 ? 2 : 1);
         }
 
         // Payment schedule: 1–15 -> 25th of the same month; 16–end -> 10th of the next month.
@@ -611,16 +695,13 @@
 
             let totalHours = 0;
             let totalEarnings = 0;
-            const rate = state.settings.hourlyRate || 350;
-
             Object.keys(state.shifts).forEach(dateStr => {
                 const shiftDate = new Date(dateStr + 'T00:00:00');
                 if (shiftDate >= periodStart && shiftDate <= forecastEnd) {
                     const shift = state.shifts[dateStr];
                     const hours = parseFloat(shift.hours) || 0;
-                    const mult = shift.x2 ? 2 : 1;
                     totalHours += hours;
-                    totalEarnings += hours * rate * mult;
+                    totalEarnings += calculateShiftEarnings({ ...shift, hours });
                 }
             });
 
@@ -687,7 +768,10 @@
         function setTodayHours(hours) {
             const todayStr = getISODateStr();
             if (!state.shifts[todayStr]) {
-                state.shifts[todayStr] = { hours: 0, x2: false };
+                state.shifts[todayStr] = { hours: 0, x2: false, rate: Number(state.settings.hourlyRate) || 350 };
+            }
+            if (!Number.isFinite(Number(state.shifts[todayStr].rate)) || Number(state.shifts[todayStr].rate) <= 0) {
+                state.shifts[todayStr].rate = Number(state.settings.hourlyRate) || 350;
             }
             state.shifts[todayStr].hours = hours;
             if (hours === 0) state.shifts[todayStr].x2 = false;
@@ -710,8 +794,11 @@
             const todayStr = getISODateStr();
             const checked = document.getElementById('todayX2Toggle').checked;
             if (!state.shifts[todayStr]) {
-                state.shifts[todayStr] = { hours: 8, x2: checked };
+                state.shifts[todayStr] = { hours: 8, x2: checked, rate: Number(state.settings.hourlyRate) || 350 };
             } else {
+                if (!Number.isFinite(Number(state.shifts[todayStr].rate)) || Number(state.shifts[todayStr].rate) <= 0) {
+                    state.shifts[todayStr].rate = Number(state.settings.hourlyRate) || 350;
+                }
                 state.shifts[todayStr].x2 = checked;
             }
             saveState();
@@ -803,7 +890,7 @@
             });
 
             // Sort by Date DESC
-            items.sort((a, b) => new Date(b.date) - new Date(a.date));
+            items.sort((a, b) => b.date.localeCompare(a.date) || (Number(b.id) || 0) - (Number(a.id) || 0));
 
             if (items.length === 0) {
                 list.innerHTML = `<div class="text-xs text-slate-500 py-3 text-center">История операций пуста</div>`;
@@ -818,7 +905,7 @@
                         <i class="fa-solid ${item.icon}"></i>
                         <div>
                             <div class="font-bold text-slate-200">${item.title} <span class="text-[10px] text-slate-500 font-normal">(${formatRuDate(item.date)})</span></div>
-                            ${item.comment ? `<div class="text-[10px] text-slate-400 truncate max-w-[150px]">${item.comment}</div>` : ''}
+                            ${item.comment ? `<div class="text-[10px] text-slate-400 truncate max-w-[150px]">${escapeHTML(item.comment)}</div>` : ''}
                         </div>
                     </div>
                     <div class="flex items-center space-x-2">
@@ -878,7 +965,12 @@
             let firstHalfEarnings = 0;
             let secondHalfEarnings = 0;
             let monthTips = 0;
-            const rate = state.settings.hourlyRate || 350;
+            const tipsByDate = {};
+            state.tips.forEach(tip => {
+                if (typeof tip.date === 'string' && tip.date.startsWith(`${year}-${String(month + 1).padStart(2, '0')}-`)) {
+                    tipsByDate[tip.date] = (tipsByDate[tip.date] || 0) + (Number(tip.amount) || 0);
+                }
+            });
 
             const todayISO = getISODateStr(today);
 
@@ -891,9 +983,8 @@
                 const isFuture = dayDate > today;
 
                 if (shift.hours > 0) {
-                    const mult = shift.x2 ? 2 : 1;
-                    const shiftEarnings = shift.hours * rate * mult;
-                    monthHours += shift.hours;
+                    const shiftEarnings = calculateShiftEarnings(shift);
+                    monthHours += Number(shift.hours) || 0;
                     monthEarnings += shiftEarnings;
                     if (day <= 15) {
                         firstHalfEarnings += shiftEarnings;
@@ -902,10 +993,8 @@
                     }
                 }
 
-                // Sum tips for date
-                state.tips.forEach(t => {
-                    if (t.date === dateStr) monthTips += t.amount;
-                });
+                // Tips received on this date
+                monthTips += tipsByDate[dateStr] || 0;
 
                 const dayCell = document.createElement('div');
                 dayCell.className = `h-12 rounded-xl border flex flex-col items-center justify-between p-1 cursor-pointer transition relative ${
@@ -961,7 +1050,8 @@
             if (hours <= 0) {
                 delete state.shifts[selectedShiftDateStr];
             } else {
-                state.shifts[selectedShiftDateStr] = { hours, x2 };
+                const existingShift = state.shifts[selectedShiftDateStr];
+                state.shifts[selectedShiftDateStr] = { hours, x2, rate: getShiftRate(existingShift || {}) };
             }
 
             saveState();
@@ -981,77 +1071,92 @@
 
         function renderAnalytics() {
             const now = new Date();
-            const rate = state.settings.hourlyRate || 350;
-
-            // Collect 12 months data
             const monthsMap = {};
             const monthKeys = [];
 
             for (let i = 11; i >= 0; i--) {
                 const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
                 const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-                const label = d.toLocaleString('ru', { month: 'short' });
-                monthsMap[key] = { label, payouts: 0, tips: 0, shifts: 0 };
+                const label = d.toLocaleString('ru-RU', { month: 'short' });
+                monthsMap[key] = {
+                    label,
+                    payouts: 0,
+                    payoutByType: { advance: 0, salary: 0, bonus: 0, vacation: 0 },
+                    tips: 0,
+                    shifts: 0,
+                    hours: 0
+                };
                 monthKeys.push(key);
             }
 
-            // Calculate shift earnings
-            Object.keys(state.shifts).forEach(dateStr => {
-                const key = dateStr.substring(0, 7);
-                if (monthsMap[key]) {
-                    const shift = state.shifts[dateStr];
-                    const mult = shift.x2 ? 2 : 1;
-                    monthsMap[key].shifts += shift.hours * rate * mult;
-                }
+            Object.entries(state.shifts).forEach(([dateStr, shift]) => {
+                const month = monthsMap[String(dateStr).substring(0, 7)];
+                if (!month) return;
+                const hours = Math.max(0, Number(shift.hours) || 0);
+                month.hours += hours;
+                month.shifts += calculateShiftEarnings({ ...shift, hours });
             });
 
-            // Calculate tips
-            state.tips.forEach(t => {
-                const key = t.date.substring(0, 7);
-                if (monthsMap[key]) {
-                    monthsMap[key].tips += t.amount;
-                }
+            state.tips.forEach(tip => {
+                const month = monthsMap[String(tip.date || '').substring(0, 7)];
+                if (month) month.tips += Number(tip.amount) || 0;
             });
 
-            // Calculate payouts
-            state.payouts.forEach(p => {
-                const key = p.date.substring(0, 7);
-                if (monthsMap[key]) {
-                    monthsMap[key].payouts += p.amount;
-                }
+            state.payouts.forEach(payout => {
+                const month = monthsMap[String(payout.date || '').substring(0, 7)];
+                if (!month) return;
+                const amount = Number(payout.amount) || 0;
+                month.payouts += amount;
+                if (month.payoutByType[payout.type] !== undefined) month.payoutByType[payout.type] += amount;
             });
 
+            const payoutBreakdown = { advance: 0, salary: 0, bonus: 0, vacation: 0, tips: 0 };
             let annualTotal = 0;
-            let activeMonths = 0;
             let annualTips = 0;
-            let bestMonthLabel = "--";
+            let annualShiftTotal = 0;
+            let annualHours = 0;
+            let activeMonths = 0;
+            let bestMonthLabel = '--';
             let bestMonthAmount = 0;
 
-            monthKeys.forEach(k => {
-                const m = monthsMap[k];
-                const totalIncome = m.payouts + m.tips; // Total recorded payout + tips
-                if (totalIncome > 0 || m.shifts > 0) activeMonths++;
-                
-                annualTotal += totalIncome;
-                annualTips += m.tips;
+            monthKeys.forEach(key => {
+                const month = monthsMap[key];
+                const received = month.payouts + month.tips;
+                if (received > 0) activeMonths++;
+                annualTotal += received;
+                annualTips += month.tips;
+                annualShiftTotal += month.shifts;
+                annualHours += month.hours;
 
-                if (totalIncome > bestMonthAmount) {
-                    bestMonthAmount = totalIncome;
-                    bestMonthLabel = m.label;
+                Object.keys(month.payoutByType).forEach(type => {
+                    payoutBreakdown[type] += month.payoutByType[type];
+                });
+                payoutBreakdown.tips += month.tips;
+
+                if (received > bestMonthAmount) {
+                    bestMonthAmount = received;
+                    bestMonthLabel = month.label;
                 }
             });
 
             const avgIncome = activeMonths > 0 ? Math.round(annualTotal / activeMonths) : 0;
             const avgTips = activeMonths > 0 ? Math.round(annualTips / activeMonths) : 0;
 
-            document.getElementById('statsAnnualTotal').textContent = `${annualTotal.toLocaleString()} ₽`;
-            document.getElementById('statsMonthlyAvg').textContent = `${avgIncome.toLocaleString()} ₽`;
-            document.getElementById('statsTipsAvg').textContent = `${avgTips.toLocaleString()} ₽`;
+            document.getElementById('statsAnnualTotal').textContent = `${annualTotal.toLocaleString('ru-RU')} ₽`;
+            document.getElementById('statsMonthlyAvg').textContent = `${avgIncome.toLocaleString('ru-RU')} ₽`;
+            document.getElementById('statsTipsAvg').textContent = `${avgTips.toLocaleString('ru-RU')} ₽`;
             document.getElementById('statsBestMonth').textContent = bestMonthLabel;
-            document.getElementById('statsBestMonthAmount').textContent = `${bestMonthAmount.toLocaleString()} ₽`;
+            document.getElementById('statsBestMonthAmount').textContent = `${bestMonthAmount.toLocaleString('ru-RU')} ₽`;
+            document.getElementById('statsShiftTotal').textContent = `${Math.round(annualShiftTotal).toLocaleString('ru-RU')} ₽`;
+            document.getElementById('statsAnnualHours').textContent = `${Number(annualHours.toFixed(1)).toLocaleString('ru-RU')} ч`;
 
             renderMonthlyIncomeCards(monthKeys, monthsMap);
-            renderCharts(monthKeys.map(k => monthsMap[k].label), monthKeys.map(k => monthsMap[k].payouts + monthsMap[k].tips), monthKeys.map(k => monthsMap[k].payouts), monthKeys.map(k => monthsMap[k].tips));
+            renderCharts(
+                monthKeys.map(key => monthsMap[key].label),
+                monthKeys.map(key => monthsMap[key].payouts),
+                monthKeys.map(key => monthsMap[key].tips),
+                payoutBreakdown
+            );
         }
 
         function renderMonthlyIncomeCards(monthKeys, monthsMap) {
@@ -1059,45 +1164,74 @@
             if (!container) return;
             container.innerHTML = '';
 
-            // Show only months with recorded money actually received: payouts and tips.
-            const monthsWithIncome = [...monthKeys].reverse().filter(key => {
+            const monthsWithData = [...monthKeys].reverse().filter(key => {
                 const month = monthsMap[key];
-                return month && (month.payouts > 0 || month.tips > 0);
+                return month && (month.payouts > 0 || month.tips > 0 || month.shifts > 0 || month.hours > 0);
             });
 
-            const heading = container.parentElement?.querySelector('span');
-            if (heading) heading.textContent = 'Только месяцы с доходом';
+            const periodLabel = container.parentElement?.querySelector('span');
+            if (periodLabel) periodLabel.textContent = 'Последние 12 месяцев';
 
-            if (monthsWithIncome.length === 0) {
-                container.innerHTML = '<div class="glass-card rounded-2xl p-5 text-center text-sm text-slate-400">Пока нет записей о полученных выплатах или чаевых</div>';
+            if (monthsWithData.length === 0) {
+                container.innerHTML = '<div class="glass-card rounded-2xl p-5 text-center text-sm text-slate-400">Пока нет записей о сменах, выплатах или чаевых</div>';
                 return;
             }
 
-            monthsWithIncome.forEach(key => {
+            const formatMoney = amount => `${Math.round(Number(amount) || 0).toLocaleString('ru-RU')} ₽`;
+            const payoutTypes = [
+                ['Аванс', 'advance'],
+                ['Зарплата', 'salary'],
+                ['Премия', 'bonus'],
+                ['Отпускные', 'vacation']
+            ];
+
+            monthsWithData.forEach(key => {
                 const month = monthsMap[key];
                 const received = month.payouts + month.tips;
                 const [year, monthNumber] = key.split('-').map(Number);
                 const monthDate = new Date(year, monthNumber - 1, 1);
                 const label = monthDate.toLocaleString('ru-RU', { month: 'long', year: 'numeric' });
-                const card = document.createElement('div');
-                card.className = 'glass-card rounded-2xl p-4 flex items-center justify-between gap-3';
-                card.innerHTML = `
-                    <div class="min-w-0">
-                        <div class="text-sm font-bold text-slate-200 capitalize">${label}</div>
-                        <div class="mt-1 text-[11px] text-slate-400">Выплаты: ${month.payouts.toLocaleString('ru-RU')} ₽</div>
-                        <div class="text-[11px] text-amber-400">Чаевые: ${month.tips.toLocaleString('ru-RU')} ₽</div>
+                const payoutRows = payoutTypes.map(([title, type]) => `
+                    <div class="month-payout-cell">
+                        <span>${title}</span>
+                        <strong>${formatMoney(month.payoutByType[type])}</strong>
                     </div>
-                    <div class="text-right shrink-0">
-                        <div class="text-[10px] text-slate-500 uppercase font-semibold">Всего получено</div>
-                        <div class="text-lg font-black text-emerald-400">${received.toLocaleString('ru-RU')} ₽</div>
+                `).join('');
+
+                const card = document.createElement('div');
+                card.className = 'glass-card monthly-income-card rounded-2xl';
+                card.innerHTML = `
+                    <div class="text-sm font-extrabold text-slate-200 capitalize">${label}</div>
+                    <div class="grid grid-cols-2 gap-2.5 mt-3">${payoutRows}</div>
+                    <div class="mt-3 pt-3 border-t border-slate-700/50 space-y-2">
+                        <div class="flex items-center justify-between text-xs">
+                            <span class="text-slate-400">Выплаты всего</span>
+                            <strong class="text-slate-200">${formatMoney(month.payouts)}</strong>
+                        </div>
+                        <div class="flex items-center justify-between text-xs">
+                            <span class="text-slate-400">Чаевые</span>
+                            <strong class="text-amber-500">${formatMoney(month.tips)}</strong>
+                        </div>
+                    </div>
+                    <div class="monthly-total-row">
+                        <span>Всего получено</span>
+                        <strong>${formatMoney(received)}</strong>
+                    </div>
+                    <div class="monthly-earned-note">
+                        По сменам начислено: <strong>${formatMoney(month.shifts)}</strong> ·
+                        ${Number(month.hours.toFixed(1)).toLocaleString('ru-RU')} ч.
+                        Не входит в сумму фактически полученного.
                     </div>
                 `;
                 container.appendChild(card);
             });
         }
 
-        function renderCharts(labels, totalData, payoutData, tipData) {
-            // Line Chart
+        function renderCharts(labels, payoutData, tipData, payoutBreakdown) {
+            const chartText = '#64748b';
+            const chartGrid = '#e8eef7';
+            const moneyTick = value => `${Number(value).toLocaleString('ru-RU')} ₽`;
+
             const ctxLine = document.getElementById('incomeLineChart')?.getContext('2d');
             if (ctxLine) {
                 if (lineChartInstance) lineChartInstance.destroy();
@@ -1107,63 +1241,73 @@
                         labels,
                         datasets: [
                             {
-                                label: 'Общий доход',
-                                data: totalData,
-                                borderColor: '#22c55e',
-                                backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                                label: 'Выплаты',
+                                data: payoutData,
+                                borderColor: '#2875e8',
+                                backgroundColor: 'rgba(40, 117, 232, .10)',
+                                pointBackgroundColor: '#2875e8',
+                                pointRadius: 2,
                                 fill: true,
-                                tension: 0.3
+                                tension: 0.32
                             },
                             {
                                 label: 'Чаевые',
                                 data: tipData,
-                                borderColor: '#f59e0b',
+                                borderColor: '#e2a93b',
+                                backgroundColor: 'rgba(226, 169, 59, .06)',
+                                pointBackgroundColor: '#e2a93b',
+                                pointRadius: 2,
                                 borderDash: [4, 4],
                                 fill: false,
-                                tension: 0.3
+                                tension: 0.32
                             }
                         ]
                     },
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
+                        interaction: { mode: 'index', intersect: false },
                         plugins: {
-                            legend: { labels: { color: '#94a3b8', font: { size: 10 } } }
+                            legend: { labels: { color: chartText, usePointStyle: true, boxWidth: 7, font: { size: 10 } } },
+                            tooltip: {
+                                callbacks: { label: context => `${context.dataset.label}: ${moneyTick(context.parsed.y)}` }
+                            }
                         },
                         scales: {
-                            x: { ticks: { color: '#64748b', font: { size: 9 } }, grid: { display: false } },
-                            y: { ticks: { color: '#64748b', font: { size: 9 } }, grid: { color: '#1e293b' } }
+                            x: { ticks: { color: chartText, font: { size: 9 } }, grid: { display: false } },
+                            y: { beginAtZero: true, ticks: { color: chartText, font: { size: 9 }, callback: moneyTick }, grid: { color: chartGrid } }
                         }
                     }
                 });
             }
 
-            // Doughnut Chart: Payout Breakdown
             const ctxDoughnut = document.getElementById('payoutDoughnutChart')?.getContext('2d');
             if (ctxDoughnut) {
-                const payoutTotals = { advance: 0, salary: 0, bonus: 0, vacation: 0, tips: 0 };
-                
-                state.payouts.forEach(p => {
-                    if (payoutTotals[p.type] !== undefined) payoutTotals[p.type] += p.amount;
-                });
-                state.tips.forEach(t => payoutTotals.tips += t.amount);
-
                 if (doughnutChartInstance) doughnutChartInstance.destroy();
                 doughnutChartInstance = new Chart(ctxDoughnut, {
                     type: 'doughnut',
                     data: {
                         labels: ['Аванс', 'Зарплата', 'Премия', 'Отпускные', 'Чаевые'],
                         datasets: [{
-                            data: [payoutTotals.advance, payoutTotals.salary, payoutTotals.bonus, payoutTotals.vacation, payoutTotals.tips],
-                            backgroundColor: ['#6366f1', '#10b981', '#3b82f6', '#ec4899', '#f59e0b'],
-                            borderWidth: 0
+                            data: [payoutBreakdown.advance, payoutBreakdown.salary, payoutBreakdown.bonus, payoutBreakdown.vacation, payoutBreakdown.tips],
+                            backgroundColor: ['#2875e8', '#5b9bf0', '#18a59c', '#91baf2', '#e2a93b'],
+                            borderColor: '#ffffff',
+                            borderWidth: 3,
+                            hoverOffset: 4
                         }]
                     },
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
+                        cutout: '66%',
                         plugins: {
-                            legend: { position: 'right', labels: { color: '#94a3b8', font: { size: 10 } } }
+                            legend: {
+                                position: 'bottom',
+                                labels: { color: chartText, usePointStyle: true, boxWidth: 7, padding: 14, font: { size: 10 } }
+                            },
+                            tooltip: {
+                                callbacks: { label: context => `${context.label}: ${moneyTick(context.parsed)}` }
+                            }
                         }
                     }
                 });
@@ -1180,6 +1324,10 @@
                 showToast("Введите корректную ставку", "error");
                 return;
             }
+            const previousRate = Number(state.settings.hourlyRate) || 350;
+            Object.values(state.shifts).forEach(shift => {
+                if (!Number.isFinite(Number(shift.rate)) || Number(shift.rate) <= 0) shift.rate = previousRate;
+            });
             state.settings.hourlyRate = rate;
             saveState();
             renderAll();
@@ -1200,19 +1348,47 @@
         function importDataJSON(event) {
             const file = event.target.files[0];
             if (!file) return;
-
             const reader = new FileReader();
             reader.onload = (e) => {
                 try {
                     const imported = JSON.parse(e.target.result);
-                    if (imported && typeof imported === 'object') {
-                        state = { ...state, ...imported };
-                        saveState();
-                        renderAll();
-                        showToast("Данные успешно импортированы!");
+                    const isObject = value => value && typeof value === 'object' && !Array.isArray(value);
+                    const validDate = value => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value);
+                    if (!isObject(imported) || !isObject(imported.settings) || !isObject(imported.shifts)
+                        || !Array.isArray(imported.tips) || !Array.isArray(imported.payouts)) {
+                        throw new Error('Неподдерживаемый формат резервной копии');
                     }
+                    const validShifts = Object.entries(imported.shifts).every(([date, shift]) =>
+                        validDate(date) && isObject(shift) && Number.isFinite(Number(shift.hours))
+                        && Number(shift.hours) >= 0 && Number(shift.hours) <= 24
+                        && (shift.rate === undefined || (Number.isFinite(Number(shift.rate)) && Number(shift.rate) > 0))
+                    );
+                    const validTips = imported.tips.every(tip =>
+                        isObject(tip) && validDate(tip.date) && Number.isFinite(Number(tip.amount)) && Number(tip.amount) > 0
+                    );
+                    const allowedTypes = ['advance', 'salary', 'bonus', 'vacation'];
+                    const validPayouts = imported.payouts.every(payout =>
+                        isObject(payout) && validDate(payout.date) && allowedTypes.includes(payout.type)
+                        && Number.isFinite(Number(payout.amount)) && Number(payout.amount) > 0
+                    );
+                    const importedRate = Number(imported.settings.hourlyRate);
+                    if (!validShifts || !validTips || !validPayouts || !Number.isFinite(importedRate) || importedRate <= 0) {
+                        throw new Error('В резервной копии обнаружены некорректные записи');
+                    }
+                    state = {
+                        settings: { ...state.settings, ...imported.settings },
+                        shifts: imported.shifts,
+                        tips: imported.tips,
+                        payouts: imported.payouts
+                    };
+                    saveState();
+                    renderAll();
+                    showToast('Данные успешно восстановлены');
                 } catch (err) {
-                    showToast("Ошибка при чтении файла JSON", "error");
+                    console.error('Import failed', err);
+                    showToast('Не удалось импортировать: проверьте файл резервной копии', 'error');
+                } finally {
+                    event.target.value = '';
                 }
             };
             reader.readAsText(file);
@@ -1279,7 +1455,7 @@
             
             toast.innerHTML = `
                 <i class="fa-solid ${isError ? 'fa-circle-exclamation' : 'fa-circle-check'}"></i>
-                <span>${message}</span>
+                <span>${escapeHTML(message)}</span>
             `;
 
             container.appendChild(toast);

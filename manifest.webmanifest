@@ -2,13 +2,13 @@
   "id": "./",
   "name": "Учёт Зарплаты и Смен",
   "short_name": "Зарплата",
-  "description": "Учёт смен, почасового заработка, чаевых и выплат",
+  "description": "Учёт смен, начислений, чаевых и фактических выплат",
   "lang": "ru",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#0f172a",
-  "theme_color": "#0f172a",
+  "background_color": "#f3f7ff",
+  "theme_color": "#f3f7ff",
   "icons": [
     {
       "src": "./icons/icon-192.svg",

@@ -1,5 +1,5 @@
 /* Salary PWA Service Worker */
-const CACHE_NAME = 'salary-pwa-v2';
+const CACHE_NAME = 'salary-pwa-v3';
 const BASE_URL = self.registration.scope;
 const CORE_ASSETS = [
   BASE_URL,
